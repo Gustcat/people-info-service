@@ -6,7 +6,6 @@ import (
 	"github.com/Gustcat/people-info-service/internal/lib/params"
 	"github.com/Gustcat/people-info-service/internal/lib/response"
 	"github.com/Gustcat/people-info-service/internal/models"
-	repoModels "github.com/Gustcat/people-info-service/internal/repository/models"
 	"github.com/go-chi/render"
 	"io"
 	"log"
@@ -14,7 +13,7 @@ import (
 )
 
 type Updater interface {
-	Update(ctx context.Context, id int64, personUpdate *models.PersonUpdate) (*repoModels.Person, error)
+	Update(ctx context.Context, id int64, personUpdate *models.PersonUpdate) (*models.FullPerson, error)
 }
 
 func Update(ctx context.Context, updater Updater) http.HandlerFunc {
@@ -48,6 +47,6 @@ func Update(ctx context.Context, updater Updater) http.HandlerFunc {
 			return
 		}
 
-		render.JSON(w, r, response.OK[repoModels.Person](person))
+		render.JSON(w, r, response.OK[models.FullPerson](person))
 	})
 }

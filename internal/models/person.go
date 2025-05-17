@@ -6,11 +6,16 @@ type Person struct {
 	Patronymic *string `db:"patronymic" json:"patronymic" validate:"min=2,max=100"`
 }
 
-type FullPerson struct {
+type EnrichmentPerson struct {
 	Person
-	Age         *int64
-	Gender      *Gender
-	Nationality *string
+	Age         *int64  `db:"age" json:"age" validate:"gte=0,lte=130"`
+	Gender      *Gender `db:"gender" json:"gender" validate:"oneof=male female"`
+	Nationality *string `db:"nationality" json:"nationality" validate:"min=2,max=100"`
+}
+
+type FullPerson struct {
+	ID int64 `db:"id"`
+	EnrichmentPerson
 }
 
 type PersonUpdate struct {

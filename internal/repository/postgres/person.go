@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"github.com/Gustcat/people-info-service/internal/lib/filter"
 	"github.com/Gustcat/people-info-service/internal/models"
-	repoModels "github.com/Gustcat/people-info-service/internal/repository/models"
 	sq "github.com/Masterminds/squirrel"
 	"github.com/georgysavva/scany/pgxscan"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -43,7 +42,7 @@ func (r *Repo) Close() {
 	r.db.Close()
 }
 
-func (r *Repo) Create(ctx context.Context, person *models.FullPerson) (int64, error) {
+func (r *Repo) Create(ctx context.Context, person *models.EnrichmentPerson) (int64, error) {
 	const op = "repository.postgres.NewRepo.Create"
 
 	builder := sq.Insert(tableName).
@@ -66,7 +65,7 @@ func (r *Repo) Create(ctx context.Context, person *models.FullPerson) (int64, er
 	return id, nil
 }
 
-func (r *Repo) GetByID(ctx context.Context, id int64) (*repoModels.Person, error) {
+func (r *Repo) GetByID(ctx context.Context, id int64) (*models.FullPerson, error) {
 	const op = "repository.postgres.NewRepo.GetByID"
 
 	builder := sq.Select(idColumn, nameColumn, surnameColumn, patronymicColumn, genderColumn, ageColumn, nationalityColumn).
@@ -85,7 +84,7 @@ func (r *Repo) GetByID(ctx context.Context, id int64) (*repoModels.Person, error
 	}
 	defer rows.Close()
 
-	var person repoModels.Person
+	var person models.FullPerson
 	err = pgxscan.ScanOne(&person, rows)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -97,7 +96,7 @@ func (r *Repo) GetByID(ctx context.Context, id int64) (*repoModels.Person, error
 	return &person, nil
 }
 
-func (r *Repo) List(ctx context.Context, filter *filter.PersonFilter) ([]*repoModels.Person, error) {
+func (r *Repo) List(ctx context.Context, filter *filter.PersonFilter) ([]*models.FullPerson, error) {
 	builder := sq.Select(idColumn, nameColumn, surnameColumn, patronymicColumn, genderColumn, ageColumn, nationalityColumn).
 		From("person").
 		PlaceholderFormat(sq.Dollar)
@@ -137,7 +136,7 @@ func (r *Repo) List(ctx context.Context, filter *filter.PersonFilter) ([]*repoMo
 		return nil, err
 	}
 
-	var persons []*repoModels.Person
+	persons := make([]*models.FullPerson, 0)
 	err = pgxscan.Select(ctx, r.db, &persons, query, args...)
 	if err != nil {
 		return nil, err
@@ -145,7 +144,7 @@ func (r *Repo) List(ctx context.Context, filter *filter.PersonFilter) ([]*repoMo
 	return persons, nil
 }
 
-func (r *Repo) Update(ctx context.Context, id int64, personUpdate *models.PersonUpdate) (*repoModels.Person, error) {
+func (r *Repo) Update(ctx context.Context, id int64, personUpdate *models.PersonUpdate) (*models.FullPerson, error) {
 	const op = "repository.postgres.NewRepo.Update"
 
 	builder := sq.Update(tableName).
@@ -190,7 +189,7 @@ func (r *Repo) Update(ctx context.Context, id int64, personUpdate *models.Person
 	}
 	defer rows.Close()
 
-	var person repoModels.Person
+	var person models.FullPerson
 	err = pgxscan.ScanOne(&person, rows)
 	if err != nil {
 		return nil, fmt.Errorf("%s: scanning failed: %w", op, err)

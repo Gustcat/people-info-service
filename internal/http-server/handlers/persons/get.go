@@ -4,14 +4,14 @@ import (
 	"context"
 	"github.com/Gustcat/people-info-service/internal/lib/params"
 	"github.com/Gustcat/people-info-service/internal/lib/response"
-	repoModels "github.com/Gustcat/people-info-service/internal/repository/models"
+	"github.com/Gustcat/people-info-service/internal/models"
 	"github.com/go-chi/render"
 	"log"
 	"net/http"
 )
 
 type Getter interface {
-	GetByID(ctx context.Context, id int64) (*repoModels.Person, error)
+	GetByID(ctx context.Context, id int64) (*models.FullPerson, error)
 }
 
 func GetByID(ctx context.Context, getter Getter) http.HandlerFunc {
@@ -31,6 +31,6 @@ func GetByID(ctx context.Context, getter Getter) http.HandlerFunc {
 			return
 		}
 
-		render.JSON(w, r, response.OK[repoModels.Person](person))
+		render.JSON(w, r, response.OK[models.FullPerson](person))
 	}
 }

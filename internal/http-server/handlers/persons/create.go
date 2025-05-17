@@ -26,14 +26,14 @@ type CreateResponse struct {
 }
 
 type Creator interface {
-	Create(ctx context.Context, person *models.FullPerson) (int64, error)
+	Create(ctx context.Context, person *models.EnrichmentPerson) (int64, error)
 }
 
 func Create(ctx context.Context, creator Creator) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.Create"
 
-		var person models.FullPerson
+		var person models.EnrichmentPerson
 
 		err := render.DecodeJSON(r.Body, &person)
 		if errors.Is(err, io.EOF) {
@@ -68,7 +68,7 @@ func Create(ctx context.Context, creator Creator) http.HandlerFunc {
 	}
 }
 
-func enrichPerson(person *models.FullPerson) {
+func enrichPerson(person *models.EnrichmentPerson) {
 	wg := &sync.WaitGroup{}
 	mu := &sync.Mutex{}
 

@@ -56,7 +56,6 @@ func main() {
 	}
 
 	if err := srv.ListenAndServe(); err != nil {
-		fmt.Printf("failed to start http server: %s", err.Error())
 		log.Fatalf("failed to start http server")
 	}
 

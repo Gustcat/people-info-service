@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/Gustcat/people-info-service/internal/lib/filter"
 	"github.com/Gustcat/people-info-service/internal/lib/response"
-	repoModels "github.com/Gustcat/people-info-service/internal/repository/models"
+	"github.com/Gustcat/people-info-service/internal/models"
 	"github.com/go-chi/render"
 	"github.com/gorilla/schema"
 	"log"
@@ -12,7 +12,7 @@ import (
 )
 
 type Lister interface {
-	List(ctx context.Context, filter *filter.PersonFilter) ([]*repoModels.Person, error)
+	List(ctx context.Context, filter *filter.PersonFilter) ([]*models.FullPerson, error)
 }
 
 func List(ctx context.Context, lister Lister) http.HandlerFunc {
@@ -37,6 +37,6 @@ func List(ctx context.Context, lister Lister) http.HandlerFunc {
 			return
 		}
 
-		render.JSON(w, r, response.OK[[]*repoModels.Person](&persons))
+		render.JSON(w, r, response.OK[[]*models.FullPerson](&persons))
 	}
 }
