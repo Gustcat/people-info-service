@@ -1,0 +1,221 @@
+package postgres
+
+import (
+	"context"
+	"database/sql"
+	"errors"
+	"fmt"
+	"github.com/Gustcat/people-info-service/internal/lib/filter"
+	"github.com/Gustcat/people-info-service/internal/models"
+	repoModels "github.com/Gustcat/people-info-service/internal/repository/models"
+	sq "github.com/Masterminds/squirrel"
+	"github.com/georgysavva/scany/pgxscan"
+	"github.com/jackc/pgx/v4/pgxpool"
+)
+
+const (
+	tableName = "person"
+
+	idColumn          = "id"
+	nameColumn        = "name"
+	surnameColumn     = "surname"
+	patronymicColumn  = "patronymic"
+	genderColumn      = "gender"
+	ageColumn         = "age"
+	nationalityColumn = "nationality"
+)
+
+type Repo struct {
+	db *pgxpool.Pool
+}
+
+func NewRepo(ctx context.Context, DSN string) (*Repo, error) {
+	const op = "repository.postgres.NewRepo"
+
+	db, err := pgxpool.Connect(ctx, DSN)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	return &Repo{db: db}, nil
+}
+
+func (r *Repo) Close() {
+	r.db.Close()
+}
+
+func (r *Repo) Create(ctx context.Context, person *models.FullPerson) (int64, error) {
+	const op = "repository.postgres.NewRepo.Create"
+
+	builder := sq.Insert(tableName).
+		PlaceholderFormat(sq.Dollar).
+		Columns(nameColumn, surnameColumn, patronymicColumn, genderColumn, ageColumn, nationalityColumn).
+		Values(person.Name, person.Surname, person.Patronymic, person.Gender, person.Age, person.Nationality).
+		Suffix("RETURNING id")
+
+	query, args, err := builder.ToSql()
+	if err != nil {
+		return 0, fmt.Errorf("%s: building SQL failed: %w", op, err)
+	}
+
+	var id int64
+	err = r.db.QueryRow(ctx, query, args...).Scan(&id)
+	if err != nil {
+		return 0, fmt.Errorf("%s: executing query failed: %w", op, err)
+	}
+
+	return id, nil
+}
+
+func (r *Repo) GetByID(ctx context.Context, id int64) (*repoModels.Person, error) {
+	const op = "repository.postgres.NewRepo.GetByID"
+
+	builder := sq.Select(idColumn, nameColumn, surnameColumn, patronymicColumn, genderColumn, ageColumn, nationalityColumn).
+		From(tableName).
+		Where(sq.Eq{idColumn: id}).
+		PlaceholderFormat(sq.Dollar)
+
+	query, args, err := builder.ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("%s: building SQL failed: %w", op, err)
+	}
+
+	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("%s: query failed: %w", op, err)
+	}
+	defer rows.Close()
+
+	var person repoModels.Person
+	err = pgxscan.ScanOne(&person, rows)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil // TODO: сдедать кастомную ошибку
+		}
+		return nil, fmt.Errorf("%s: scanning failed: %w", op, err)
+	}
+
+	return &person, nil
+}
+
+func (r *Repo) List(ctx context.Context, filter *filter.PersonFilter) ([]*repoModels.Person, error) {
+	builder := sq.Select(idColumn, nameColumn, surnameColumn, patronymicColumn, genderColumn, ageColumn, nationalityColumn).
+		From("person").
+		PlaceholderFormat(sq.Dollar)
+
+	if filter.Name != nil {
+		builder = builder.Where(sq.Eq{"name": *filter.Name})
+	}
+	if filter.Surname != nil {
+		builder = builder.Where(sq.Eq{"surname": *filter.Surname})
+	}
+	if filter.Patronymic != nil {
+		builder = builder.Where(sq.Eq{"patronymic": *filter.Patronymic})
+	}
+	if filter.AgeMin != nil {
+		builder = builder.Where(sq.GtOrEq{"age": *filter.AgeMin})
+	}
+	if filter.AgeMax != nil {
+		builder = builder.Where(sq.LtOrEq{"age": *filter.AgeMax})
+	}
+	if filter.Gender != nil {
+		builder = builder.Where(sq.Eq{"surname": *filter.Gender})
+	}
+	if filter.Nationality != nil {
+		builder = builder.Where(sq.Eq{"nationality": *filter.Nationality})
+	}
+
+	if filter.Limit != nil {
+		builder = builder.Limit(*filter.Limit)
+	}
+
+	if filter.Offset != nil {
+		builder = builder.Offset(*filter.Offset)
+	}
+
+	query, args, err := builder.ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	var persons []*repoModels.Person
+	err = pgxscan.Select(ctx, r.db, &persons, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	return persons, nil
+}
+
+func (r *Repo) Update(ctx context.Context, id int64, personUpdate *models.PersonUpdate) (*repoModels.Person, error) {
+	const op = "repository.postgres.NewRepo.Update"
+
+	builder := sq.Update(tableName).
+		PlaceholderFormat(sq.Dollar).
+		Where(sq.Eq{idColumn: id})
+
+	// TODO: разобраться с отсутствием Set
+	if personUpdate.Name != nil {
+		builder = builder.Set("name", *personUpdate.Name)
+	}
+
+	if personUpdate.Surname != nil {
+		builder = builder.Set("surname", *personUpdate.Surname)
+	}
+
+	if personUpdate.Patronymic != nil {
+		builder = builder.Set("patronymic", *personUpdate.Patronymic)
+	}
+
+	if personUpdate.Gender != nil {
+		builder = builder.Set("gender", *personUpdate.Gender)
+	}
+
+	if personUpdate.Age != nil {
+		builder = builder.Set("age", *personUpdate.Age)
+	}
+
+	if personUpdate.Nationality != nil {
+		builder = builder.Set("nationality", *personUpdate.Nationality)
+	}
+
+	builder = builder.Suffix("RETURNING id, name, surname, patronymic, gender, age, nationality")
+
+	query, args, err := builder.ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("%s: building SQL failed: %w", op, err)
+	}
+
+	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("%s: query failed: %w", op, err)
+	}
+	defer rows.Close()
+
+	var person repoModels.Person
+	err = pgxscan.ScanOne(&person, rows)
+	if err != nil {
+		return nil, fmt.Errorf("%s: scanning failed: %w", op, err)
+	}
+
+	return &person, nil
+
+}
+
+func (r *Repo) Delete(ctx context.Context, id int64) error {
+	const op = "repository.postgres.NewRepo.Delete"
+
+	q := sq.Delete(tableName).
+		PlaceholderFormat(sq.Dollar).
+		Where(sq.Eq{idColumn: id})
+
+	query, args, err := q.ToSql()
+	if err != nil {
+		return fmt.Errorf("%s: building SQL failed: %w", op, err)
+	}
+
+	_, err = r.db.Exec(ctx, query, args...)
+	if err != nil {
+		return fmt.Errorf("%s: executing query failed: %w", op, err)
+	}
+
+	return nil
+}
