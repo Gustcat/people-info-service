@@ -1,0 +1,349 @@
+basePath: /api/v1
+definitions:
+  models.FullPerson:
+    properties:
+      age:
+        maximum: 130
+        minimum: 0
+        type: integer
+      gender:
+        allOf:
+        - $ref: '#/definitions/models.Gender'
+        enum:
+        - male
+        - female
+      id:
+        type: integer
+      name:
+        maxLength: 100
+        minLength: 2
+        type: string
+      nationality:
+        maxLength: 100
+        minLength: 2
+        type: string
+      patronymic:
+        maxLength: 100
+        minLength: 2
+        type: string
+      surname:
+        maxLength: 100
+        minLength: 2
+        type: string
+    required:
+    - name
+    - surname
+    type: object
+  models.Gender:
+    enum:
+    - male
+    - female
+    type: string
+    x-enum-varnames:
+    - GenderMale
+    - GenderFemale
+  models.Identifier:
+    properties:
+      id:
+        type: integer
+    type: object
+  models.Person:
+    properties:
+      name:
+        maxLength: 100
+        minLength: 2
+        type: string
+      patronymic:
+        maxLength: 100
+        minLength: 2
+        type: string
+      surname:
+        maxLength: 100
+        minLength: 2
+        type: string
+    required:
+    - name
+    - surname
+    type: object
+  models.PersonUpdate:
+    properties:
+      age:
+        maximum: 130
+        minimum: 0
+        type: integer
+      gender:
+        allOf:
+        - $ref: '#/definitions/models.Gender'
+        enum:
+        - male
+        - female
+      name:
+        maxLength: 100
+        minLength: 2
+        type: string
+      nationality:
+        maxLength: 100
+        minLength: 2
+        type: string
+      patronymic:
+        maxLength: 100
+        minLength: 2
+        type: string
+      surname:
+        maxLength: 100
+        minLength: 2
+        type: string
+    type: object
+  response.Status:
+    enum:
+    - ok
+    - error
+    type: string
+    x-enum-varnames:
+    - StatusOK
+    - StatusError
+  swagger.EmptyResponse:
+    properties:
+      status:
+        allOf:
+        - $ref: '#/definitions/response.Status'
+        enum:
+        - ok
+    type: object
+  swagger.ErrorResponse:
+    properties:
+      error:
+        type: string
+      status:
+        allOf:
+        - $ref: '#/definitions/response.Status'
+        description: |-
+          Value is a fixed constant value.
+          Enum: ["error"]
+        enum:
+        - error
+        example: error
+    type: object
+  swagger.FullPersonResponse:
+    properties:
+      data:
+        $ref: '#/definitions/models.FullPerson'
+      status:
+        allOf:
+        - $ref: '#/definitions/response.Status'
+        enum:
+        - ok
+    type: object
+  swagger.FullPersonsResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/models.FullPerson'
+        type: array
+      status:
+        allOf:
+        - $ref: '#/definitions/response.Status'
+        enum:
+        - ok
+    type: object
+  swagger.IdResponse:
+    properties:
+      data:
+        $ref: '#/definitions/models.Identifier'
+      status:
+        allOf:
+        - $ref: '#/definitions/response.Status'
+        enum:
+        - ok
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: REST API-сервис для работы с информацией о людях.
+  title: People info service API
+  version: "1.0"
+paths:
+  /persons/:
+    get:
+      consumes:
+      - application/json
+      description: Возращает профили всех людей с возможностью фильтрации по значению
+        полей и пагинации
+      parameters:
+      - in: query
+        name: ageMax
+        type: integer
+      - in: query
+        name: ageMin
+        type: integer
+      - enum:
+        - male
+        - female
+        in: query
+        name: gender
+        type: string
+        x-enum-varnames:
+        - GenderMale
+        - GenderFemale
+      - in: query
+        name: limit
+        type: integer
+      - in: query
+        name: name
+        type: string
+      - in: query
+        name: nationality
+        type: string
+      - in: query
+        name: offset
+        type: integer
+      - in: query
+        name: patronymic
+        type: string
+      - in: query
+        name: surname
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/swagger.FullPersonsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/swagger.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/swagger.ErrorResponse'
+      summary: Возвращает профили людей
+      tags:
+      - persons
+    post:
+      consumes:
+      - application/json
+      description: Вводится ФИО, данные обогащаются возрастом, национальностью и полом,
+        возращается ID созданной записи
+      parameters:
+      - description: ФИО
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/models.Person'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/swagger.IdResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/swagger.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/swagger.ErrorResponse'
+      summary: Создать профиль человека
+      tags:
+      - persons
+  /persons/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Удаляет профиль человека
+      parameters:
+      - description: Идентификатор профиля человека
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/swagger.EmptyResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/swagger.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/swagger.ErrorResponse'
+      summary: Удаляет профиль человека
+      tags:
+      - persons
+    get:
+      consumes:
+      - application/json
+      description: Возвращает информацию по ID
+      parameters:
+      - description: Идентификатор профиля человека
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/swagger.FullPersonResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/swagger.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/swagger.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/swagger.ErrorResponse'
+      summary: Получить профиль человека
+      tags:
+      - persons
+    patch:
+      consumes:
+      - application/json
+      description: У записи с определенным ID редактирует поля
+      parameters:
+      - description: Идентификатор профиля человека
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Редактируемые поля
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/models.PersonUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/swagger.FullPersonResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/swagger.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/swagger.ErrorResponse'
+      summary: Редактирует профиль человека
+      tags:
+      - persons
+swagger: "2.0"

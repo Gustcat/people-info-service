@@ -3,10 +3,13 @@ package persons
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/Gustcat/people-info-service/internal/lib/params"
 	"github.com/Gustcat/people-info-service/internal/lib/response"
+	"github.com/Gustcat/people-info-service/internal/lib/validation"
 	"github.com/Gustcat/people-info-service/internal/models"
 	"github.com/go-chi/render"
+	"github.com/go-playground/validator/v10"
 	"io"
 	"log"
 	"net/http"
@@ -27,6 +30,7 @@ type Updater interface {
 // @Param        input body models.PersonUpdate true "Редактируемые поля"
 // @Success      200  {object}  swagger.FullPersonResponse
 // @Failure      400  {object}  swagger.ErrorResponse
+// @Failure      404  {object}  swagger.ErrorResponse
 // @Failure      500  {object}  swagger.ErrorResponse
 // @Router       /persons/{id} [patch]
 func Update(ctx context.Context, updater Updater) http.HandlerFunc {
@@ -40,15 +44,24 @@ func Update(ctx context.Context, updater Updater) http.HandlerFunc {
 
 		var personUpdate *models.PersonUpdate
 
-		err := render.DecodeJSON(r.Body, &personUpdate)
-		if errors.Is(err, io.EOF) {
+		err := validation.DecodeStrictJSON(r, &personUpdate)
+		if errors.Is(err, io.EOF) || isEmptyPersonUpdate(personUpdate) {
 			render.Status(r, http.StatusBadRequest)
 			render.JSON(w, r, response.Error("empty request"))
 			return
 		}
 		if err != nil {
 			render.Status(r, http.StatusBadRequest)
-			render.JSON(w, r, response.Error("failed to parse request"))
+			render.JSON(w, r, response.Error(fmt.Sprintf("invalid JSON: %s", err)))
+			return
+		}
+
+		if err := validator.New().Struct(personUpdate); err != nil {
+			validateErr := err.(validator.ValidationErrors)
+			errMsg := validation.ErrorMessage(validateErr)
+			render.Status(r, http.StatusBadRequest)
+			render.JSON(w, r, response.Error(errMsg))
+
 			return
 		}
 
@@ -62,4 +75,13 @@ func Update(ctx context.Context, updater Updater) http.HandlerFunc {
 
 		render.JSON(w, r, response.OK[models.FullPerson](person))
 	})
+}
+
+func isEmptyPersonUpdate(p *models.PersonUpdate) bool {
+	return p.Name == nil &&
+		p.Surname == nil &&
+		p.Patronymic == nil &&
+		p.Age == nil &&
+		p.Gender == nil &&
+		p.Nationality == nil
 }

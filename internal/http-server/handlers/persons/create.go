@@ -4,10 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/Gustcat/people-info-service/internal/lib/response"
 	"github.com/Gustcat/people-info-service/internal/lib/urlbuilder"
+	"github.com/Gustcat/people-info-service/internal/lib/validation"
 	"github.com/Gustcat/people-info-service/internal/models"
+	"github.com/Gustcat/people-info-service/internal/repository"
 	"github.com/go-chi/render"
+	"github.com/go-playground/validator/v10"
 	"io"
 	"log"
 	"net/http"
@@ -41,7 +45,7 @@ func Create(ctx context.Context, creator Creator) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.Create"
 
-		var person models.EnrichmentPerson
+		var person models.Person
 
 		err := render.DecodeJSON(r.Body, &person)
 		if errors.Is(err, io.EOF) {
@@ -55,13 +59,25 @@ func Create(ctx context.Context, creator Creator) http.HandlerFunc {
 			return
 		}
 
-		//TODO: обработка ошибок валидации
+		if err := validator.New().Struct(person); err != nil {
+			validateErr := err.(validator.ValidationErrors)
+			errMsg := validation.ErrorMessage(validateErr)
+			render.Status(r, http.StatusBadRequest)
+			render.JSON(w, r, response.Error(errMsg))
 
-		enrichPerson(&person)
+			return
+		}
 
-		id, err := creator.Create(r.Context(), &person)
+		enrichPerson := enrichPerson(&person)
 
-		// TODO: обработать случай с попыткой создать уже существ. запись
+		id, err := creator.Create(r.Context(), enrichPerson)
+
+		if errors.Is(err, repository.ErrPersonExists) {
+			render.Status(r, http.StatusBadRequest)
+			render.JSON(w, r, response.Error(fmt.Sprintf(
+				"Person with name %s %s already exists", person.Name, person.Surname)))
+			return
+		}
 
 		if err != nil {
 			render.Status(r, http.StatusInternalServerError)
@@ -76,9 +92,13 @@ func Create(ctx context.Context, creator Creator) http.HandlerFunc {
 	}
 }
 
-func enrichPerson(person *models.EnrichmentPerson) {
+func enrichPerson(person *models.Person) *models.EnrichmentPerson {
 	wg := &sync.WaitGroup{}
 	mu := &sync.Mutex{}
+
+	enrichPerson := &models.EnrichmentPerson{
+		Person: *person,
+	}
 
 	wg.Add(3)
 
@@ -106,7 +126,7 @@ func enrichPerson(person *models.EnrichmentPerson) {
 		}
 
 		mu.Lock()
-		person.Age = data.Age
+		enrichPerson.Age = data.Age
 		mu.Unlock()
 	}()
 
@@ -138,7 +158,7 @@ func enrichPerson(person *models.EnrichmentPerson) {
 		}
 
 		mu.Lock()
-		person.Gender = data.Gender
+		enrichPerson.Gender = data.Gender
 		mu.Unlock()
 	}()
 
@@ -178,9 +198,11 @@ func enrichPerson(person *models.EnrichmentPerson) {
 		}
 
 		mu.Lock()
-		person.Nationality = nationality
+		enrichPerson.Nationality = nationality
 		mu.Unlock()
 	}()
 
 	wg.Wait()
+
+	return enrichPerson
 }

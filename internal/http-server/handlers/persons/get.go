@@ -2,9 +2,12 @@ package persons
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"github.com/Gustcat/people-info-service/internal/lib/params"
 	"github.com/Gustcat/people-info-service/internal/lib/response"
 	"github.com/Gustcat/people-info-service/internal/models"
+	"github.com/Gustcat/people-info-service/internal/repository"
 	"github.com/go-chi/render"
 	"log"
 	"net/http"
@@ -36,9 +39,13 @@ func GetByID(ctx context.Context, getter Getter) http.HandlerFunc {
 			return
 		}
 
-		//TODO: ошибки 400 и 404
-
 		person, err := getter.GetByID(ctx, id)
+		if errors.Is(err, repository.ErrPersonNotFound) {
+			render.Status(r, http.StatusNotFound)
+			render.JSON(w, r, response.Error(fmt.Sprintf("Person with id=%d not found", id)))
+			return
+		}
+
 		if err != nil {
 			log.Printf("error calling GetByID: %s", err)
 			render.Status(r, http.StatusInternalServerError)

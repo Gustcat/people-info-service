@@ -2,13 +2,14 @@ package postgres
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"github.com/Gustcat/people-info-service/internal/lib/filter"
 	"github.com/Gustcat/people-info-service/internal/models"
+	"github.com/Gustcat/people-info-service/internal/repository"
 	sq "github.com/Masterminds/squirrel"
 	"github.com/georgysavva/scany/pgxscan"
+	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
@@ -59,6 +60,11 @@ func (r *Repo) Create(ctx context.Context, person *models.EnrichmentPerson) (int
 	var id int64
 	err = r.db.QueryRow(ctx, query, args...).Scan(&id)
 	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			return 0, repository.ErrPersonExists
+		}
+
 		return 0, fmt.Errorf("%s: executing query failed: %w", op, err)
 	}
 
@@ -82,14 +88,14 @@ func (r *Repo) GetByID(ctx context.Context, id int64) (*models.FullPerson, error
 	if err != nil {
 		return nil, fmt.Errorf("%s: query failed: %w", op, err)
 	}
+	if !rows.Next() {
+		return nil, repository.ErrPersonNotFound
+	}
 	defer rows.Close()
 
 	var person models.FullPerson
 	err = pgxscan.ScanOne(&person, rows)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil // TODO: сдедать кастомную ошибку
-		}
 		return nil, fmt.Errorf("%s: scanning failed: %w", op, err)
 	}
 

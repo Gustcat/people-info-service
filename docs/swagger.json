@@ -1,0 +1,527 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "REST API-сервис для работы с информацией о людях.",
+        "title": "People info service API",
+        "contact": {},
+        "version": "1.0"
+    },
+    "host": "localhost:8080",
+    "basePath": "/api/v1",
+    "paths": {
+        "/persons/": {
+            "get": {
+                "description": "Возращает профили всех людей с возможностью фильтрации по значению полей и пагинации",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "persons"
+                ],
+                "summary": "Возвращает профили людей",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "name": "ageMax",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "name": "ageMin",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "male",
+                            "female"
+                        ],
+                        "type": "string",
+                        "x-enum-varnames": [
+                            "GenderMale",
+                            "GenderFemale"
+                        ],
+                        "name": "gender",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "name": "nationality",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "name": "patronymic",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "name": "surname",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/swagger.FullPersonsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/swagger.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/swagger.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Вводится ФИО, данные обогащаются возрастом, национальностью и полом, возращается ID созданной записи",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "persons"
+                ],
+                "summary": "Создать профиль человека",
+                "parameters": [
+                    {
+                        "description": "ФИО",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.Person"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/swagger.IdResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/swagger.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/swagger.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/persons/{id}": {
+            "get": {
+                "description": "Возвращает информацию по ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "persons"
+                ],
+                "summary": "Получить профиль человека",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Идентификатор профиля человека",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/swagger.FullPersonResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/swagger.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/swagger.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/swagger.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Удаляет профиль человека",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "persons"
+                ],
+                "summary": "Удаляет профиль человека",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Идентификатор профиля человека",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/swagger.EmptyResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/swagger.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/swagger.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "description": "У записи с определенным ID редактирует поля",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "persons"
+                ],
+                "summary": "Редактирует профиль человека",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Идентификатор профиля человека",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Редактируемые поля",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.PersonUpdate"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/swagger.FullPersonResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/swagger.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/swagger.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "models.FullPerson": {
+            "type": "object",
+            "required": [
+                "name",
+                "surname"
+            ],
+            "properties": {
+                "age": {
+                    "type": "integer",
+                    "maximum": 130,
+                    "minimum": 0
+                },
+                "gender": {
+                    "enum": [
+                        "male",
+                        "female"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.Gender"
+                        }
+                    ]
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 2
+                },
+                "nationality": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 2
+                },
+                "patronymic": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 2
+                },
+                "surname": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 2
+                }
+            }
+        },
+        "models.Gender": {
+            "type": "string",
+            "enum": [
+                "male",
+                "female"
+            ],
+            "x-enum-varnames": [
+                "GenderMale",
+                "GenderFemale"
+            ]
+        },
+        "models.Identifier": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "models.Person": {
+            "type": "object",
+            "required": [
+                "name",
+                "surname"
+            ],
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 2
+                },
+                "patronymic": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 2
+                },
+                "surname": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 2
+                }
+            }
+        },
+        "models.PersonUpdate": {
+            "type": "object",
+            "properties": {
+                "age": {
+                    "type": "integer",
+                    "maximum": 130,
+                    "minimum": 0
+                },
+                "gender": {
+                    "enum": [
+                        "male",
+                        "female"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.Gender"
+                        }
+                    ]
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 2
+                },
+                "nationality": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 2
+                },
+                "patronymic": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 2
+                },
+                "surname": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 2
+                }
+            }
+        },
+        "response.Status": {
+            "type": "string",
+            "enum": [
+                "ok",
+                "error"
+            ],
+            "x-enum-varnames": [
+                "StatusOK",
+                "StatusError"
+            ]
+        },
+        "swagger.EmptyResponse": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "enum": [
+                        "ok"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/response.Status"
+                        }
+                    ]
+                }
+            }
+        },
+        "swagger.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                },
+                "status": {
+                    "description": "Value is a fixed constant value.\nEnum: [\"error\"]",
+                    "enum": [
+                        "error"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/response.Status"
+                        }
+                    ],
+                    "example": "error"
+                }
+            }
+        },
+        "swagger.FullPersonResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/models.FullPerson"
+                },
+                "status": {
+                    "enum": [
+                        "ok"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/response.Status"
+                        }
+                    ]
+                }
+            }
+        },
+        "swagger.FullPersonsResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.FullPerson"
+                    }
+                },
+                "status": {
+                    "enum": [
+                        "ok"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/response.Status"
+                        }
+                    ]
+                }
+            }
+        },
+        "swagger.IdResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/models.Identifier"
+                },
+                "status": {
+                    "enum": [
+                        "ok"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/response.Status"
+                        }
+                    ]
+                }
+            }
+        }
+    }
+}
