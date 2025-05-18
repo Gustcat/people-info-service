@@ -21,14 +21,22 @@ const (
 	nameParam         = "name"
 )
 
-type CreateResponse struct {
-	ID int64 `json:"id"`
-}
-
 type Creator interface {
 	Create(ctx context.Context, person *models.EnrichmentPerson) (int64, error)
 }
 
+// Create создает профиль человека
+//
+// @Summary      Создать профиль человека
+// @Description  Вводится ФИО, данные обогащаются возрастом, национальностью и полом, возращается ID созданной записи
+// @Tags         persons
+// @Accept       json
+// @Produce      json
+// @Param        input body models.Person true "ФИО"
+// @Success      201  {object}  swagger.IdResponse
+// @Failure      400  {object}  swagger.ErrorResponse
+// @Failure      500  {object}  swagger.ErrorResponse
+// @Router       /persons/ [post]
 func Create(ctx context.Context, creator Creator) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.Create"
@@ -61,10 +69,10 @@ func Create(ctx context.Context, creator Creator) http.HandlerFunc {
 			return
 		}
 
-		createResp := &CreateResponse{ID: id}
+		createResp := &models.Identifier{ID: id}
 
 		render.Status(r, http.StatusCreated)
-		render.JSON(w, r, response.OK[CreateResponse](createResp))
+		render.JSON(w, r, response.OK[models.Identifier](createResp))
 	}
 }
 

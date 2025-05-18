@@ -7,6 +7,7 @@ DSN="host=pg port=5432 dbname=${POSTGRES_DB} user=${POSTGRES_USER} password=${PO
 
 install-deps:
 	GOBIN=$(LOCAL_BIN) go install github.com/pressly/goose/v3/cmd/goose@v3.14.0
+	GOBIN=$(LOCAL_BIN) go install github.com/swaggo/swag/cmd/swag@v1.16.4
 
 local-migrration-status:
 	${LOCAL_BIN}/goose -dir ${LOCAL_MIGRATION_DIR} postgres ${DSN} status -v

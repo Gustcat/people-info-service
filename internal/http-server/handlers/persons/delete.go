@@ -12,6 +12,18 @@ type Deleter interface {
 	Delete(ctx context.Context, id int64) error
 }
 
+// Delete удаляет профиль человека по ID
+//
+// @Summary      Удаляет профиль человека
+// @Description  Удаляет профиль человека
+// @Tags         persons
+// @Accept       json
+// @Produce      json
+// @Param        id  path      int  true  "Идентификатор профиля человека"
+// @Success      200  {object}  swagger.EmptyResponse
+// @Failure      400  {object}  swagger.ErrorResponse
+// @Failure      500  {object}  swagger.ErrorResponse
+// @Router       /persons/{id} [delete]
 func Delete(ctx context.Context, deleter Deleter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.Delete"

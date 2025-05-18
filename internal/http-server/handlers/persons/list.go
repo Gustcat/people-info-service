@@ -15,6 +15,18 @@ type Lister interface {
 	List(ctx context.Context, filter *filter.PersonFilter) ([]*models.FullPerson, error)
 }
 
+// List возвращает профили людей
+//
+// @Summary      Возвращает профили людей
+// @Description  Возращает профили всех людей с возможностью фильтрации по значению полей и пагинации
+// @Tags         persons
+// @Accept       json
+// @Produce      json
+// @Param        filter query filter.PersonFilter  false "Фильтрация и пагинация"
+// @Success      200  {object}  swagger.FullPersonsResponse
+// @Failure      400  {object}  swagger.ErrorResponse
+// @Failure      500  {object}  swagger.ErrorResponse
+// @Router       /persons/ [get]
 func List(ctx context.Context, lister Lister) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.List"

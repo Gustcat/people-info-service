@@ -13,8 +13,12 @@ type EnrichmentPerson struct {
 	Nationality *string `db:"nationality" json:"nationality" validate:"min=2,max=100"`
 }
 
+type Identifier struct {
+	ID int64 `db:"id" json:"id"`
+}
+
 type FullPerson struct {
-	ID int64 `db:"id"`
+	Identifier
 	EnrichmentPerson
 }
 
