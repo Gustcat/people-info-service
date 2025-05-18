@@ -1,0 +1,27 @@
+{"time":"2025-05-18T22:13:50.3069008+03:00","level":"DEBUG","msg":"Try to connect to db (%s)","!BADKEY":"postgres://user:password@localhost:54321/people-info?sslmode=disable"}
+{"time":"2025-05-18T22:13:50.3845046+03:00","level":"DEBUG","msg":"Try to setup router"}
+{"time":"2025-05-18T22:13:50.3845046+03:00","level":"INFO","msg":"Server started at %s","!BADKEY":"localhost:8080"}
+{"time":"2025-05-18T22:24:37.2622612+03:00","level":"DEBUG","msg":"Try to connect to db","DSN":"postgres://user:password@localhost:54321/people-info?sslmode=disable"}
+{"time":"2025-05-18T22:24:37.3106401+03:00","level":"DEBUG","msg":"Try to setup router"}
+{"time":"2025-05-18T22:24:37.3106401+03:00","level":"INFO","msg":"Server started","address":"localhost:8080"}
+{"time":"2025-05-18T22:41:00.7075752+03:00","level":"DEBUG","msg":"Try to connect to db","DSN":"postgres://user:password@localhost:54321/people-info?sslmode=disable"}
+{"time":"2025-05-18T22:41:00.7523986+03:00","level":"DEBUG","msg":"Try to setup router"}
+{"time":"2025-05-18T22:41:00.7523986+03:00","level":"INFO","msg":"Server started","address":"localhost:8080"}
+{"time":"2025-05-18T22:41:13.6779679+03:00","level":"DEBUG","msg":"Receive create request"}
+{"time":"2025-05-18T22:41:13.6779679+03:00","level":"DEBUG","msg":"Parsed create successfully","person":{"name":"XYZ","surname":"Smirnov","patronymic":null}}
+{"time":"2025-05-18T22:41:13.6779679+03:00","level":"DEBUG","msg":"Try to enrich person information"}
+{"time":"2025-05-18T22:41:13.6779679+03:00","level":"DEBUG","msg":"URL for nationality","url":"https://api.nationalize.io/?name=XYZ"}
+{"time":"2025-05-18T22:41:13.6779679+03:00","level":"DEBUG","msg":"URL for age","url":"https://api.agify.io/?name=XYZ"}
+{"time":"2025-05-18T22:41:13.6779679+03:00","level":"DEBUG","msg":"URL for gender","url":"https://api.genderize.io/?name=XYZ"}
+{"time":"2025-05-18T22:41:14.4630025+03:00","level":"DEBUG","msg":"Get countries","count":5}
+{"time":"2025-05-18T22:41:14.5078495+03:00","level":"DEBUG","msg":"Receive empty age"}
+{"time":"2025-05-18T22:41:14.5554809+03:00","level":"DEBUG","msg":"Receive answer","data":{"gender":"male","probability":0.56}}
+{"time":"2025-05-18T22:41:14.5554809+03:00","level":"DEBUG","msg":"Enrich person successfully","enrich":{"name":"XYZ","surname":"Smirnov","patronymic":null,"age":69,"gender":null,"nationality":"PL"}}
+{"time":"2025-05-18T22:41:14.5834944+03:00","level":"ERROR","msg":"Get error","error":"person already exists"}
+{"time":"2025-05-18T22:41:21.3186948+03:00","level":"DEBUG","msg":"Receive list request"}
+{"time":"2025-05-18T22:41:21.3186948+03:00","level":"DEBUG","msg":"Get persons from DB by filter: %+v","!BADKEY":{"Name":"","Surname":null,"Patronymic":null,"Gender":null,"AgeMin":null,"AgeMax":null,"Nationality":null,"Limit":null,"Offset":null}}
+{"time":"2025-05-18T22:41:25.1585505+03:00","level":"DEBUG","msg":"Try to get person","id":1}
+{"time":"2025-05-18T22:41:25.1607468+03:00","level":"ERROR","msg":"Failed to get person","error":"person not found"}
+{"time":"2025-05-18T22:41:33.7554618+03:00","level":"DEBUG","msg":"Receive update request"}
+{"time":"2025-05-18T22:41:33.7554618+03:00","level":"DEBUG","msg":"Parsed update successfully","parsed":{"name":null,"surname":null,"patronymic":null,"age":150,"gender":null,"nationality":null}}
+{"time":"2025-05-18T22:41:33.7554618+03:00","level":"ERROR","msg":"Bad request","error":"field Age must be less than or equal to 130"}

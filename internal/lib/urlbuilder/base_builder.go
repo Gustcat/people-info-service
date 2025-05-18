@@ -2,7 +2,7 @@ package urlbuilder
 
 import "net/url"
 
-// Build строит URL с query-параметрами
+// Build URL with query parameters
 func BuildWithQueryParams(base string, params map[string]string) (string, error) {
 	u, err := url.Parse(base)
 	if err != nil {

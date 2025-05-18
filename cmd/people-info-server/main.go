@@ -2,16 +2,24 @@ package main
 
 import (
 	"context"
-	"fmt"
 	_ "github.com/Gustcat/people-info-service/docs"
 	"github.com/Gustcat/people-info-service/internal/config"
 	"github.com/Gustcat/people-info-service/internal/http-server/handlers/persons"
 	"github.com/Gustcat/people-info-service/internal/repository/postgres"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/joho/godotenv"
 	httpSwagger "github.com/swaggo/http-swagger"
+	"gopkg.in/natefinch/lumberjack.v2"
 	"log"
+	"log/slog"
 	"net/http"
+	"os"
+)
+
+const (
+	envLocal = "local"
+	envProd  = "prod"
 )
 
 // @title People info service API
@@ -24,36 +32,38 @@ func main() {
 
 	err := godotenv.Load(".env")
 	if err != nil {
-		fmt.Printf("doesn't load env file: %s", err.Error())
 		log.Fatalf("doesn't load env file: %s", err.Error())
 	}
 
 	conf, err := config.New()
 	if err != nil {
-		fmt.Printf("doesn't create config: %s", err.Error())
 		log.Fatal(err)
 	}
-	fmt.Printf("addr: %s", conf.HTTPServer.Address)
+
+	log := SetupLogger(conf.Env)
+
+	log.Debug("Try to connect to db", slog.String("DSN", conf.Postgres.DSN))
 
 	repo, err := postgres.NewRepo(ctx, conf.Postgres.DSN)
 	if err != nil {
-		fmt.Printf("doesn't create repo: %s", err.Error())
-		log.Fatal(err)
+		log.Error("doesn't create repo", slog.String("error", err.Error()))
+		os.Exit(1)
 	}
 	defer repo.Close()
 
+	log.Debug("Try to setup router")
 	router := chi.NewRouter()
 
-	//router.Use(middleware.Recoverer)
+	router.Use(middleware.Recoverer)
 
 	router.Get("/swagger/*", httpSwagger.WrapHandler)
 
 	router.Route("/api/v1/persons", func(r chi.Router) {
-		r.Post("/", persons.Create(ctx, repo))
-		r.Get("/", persons.List(ctx, repo))
-		r.Get("/{id}", persons.GetByID(ctx, repo))
-		r.Patch("/{id}", persons.Update(ctx, repo))
-		r.Delete("/{id}", persons.Delete(ctx, repo))
+		r.Post("/", persons.Create(ctx, log, repo))
+		r.Get("/", persons.List(ctx, log, repo))
+		r.Get("/{id}", persons.GetByID(ctx, log, repo))
+		r.Patch("/{id}", persons.Update(ctx, log, repo))
+		r.Delete("/{id}", persons.Delete(ctx, log, repo))
 	})
 
 	srv := &http.Server{
@@ -64,8 +74,39 @@ func main() {
 		IdleTimeout:  conf.HTTPServer.IdleTimeout,
 	}
 
+	log.Info("Server started", slog.String("address", conf.HTTPServer.Address))
+
 	if err := srv.ListenAndServe(); err != nil {
-		log.Fatalf("failed to start http server")
+		log.Error("failed to start http server", slog.String("error", err.Error()))
+		os.Exit(1)
+	}
+}
+
+func SetupLogger(env string) *slog.Logger {
+	var log *slog.Logger
+
+	lumberjackLogger := &lumberjack.Logger{
+		Filename:   "app.log",
+		MaxSize:    10, // МБ
+		MaxBackups: 1,  // Кол-во старых файлов
+		MaxAge:     2,  // Дней хранить
+		Compress:   true,
 	}
 
+	switch env {
+	case envLocal:
+		log = slog.New(
+			slog.NewJSONHandler(lumberjackLogger, &slog.HandlerOptions{Level: slog.LevelDebug}),
+		)
+	case envProd:
+		log = slog.New(
+			slog.NewJSONHandler(lumberjackLogger, &slog.HandlerOptions{Level: slog.LevelInfo}),
+		)
+	default:
+		log = slog.New(
+			slog.NewJSONHandler(lumberjackLogger, &slog.HandlerOptions{Level: slog.LevelInfo}),
+		)
+	}
+
+	return log
 }

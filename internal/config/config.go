@@ -8,9 +8,9 @@ import (
 
 // Config общий конфиг
 type Config struct {
-	Environment string `env:"ENV" envDefault:"local"`
-	Postgres    Postgres
-	HTTPServer  HTTPServer
+	Env        string `env:"ENV" envDefault:"prod"`
+	Postgres   Postgres
+	HTTPServer HTTPServer
 }
 
 type HTTPServer struct {
@@ -30,7 +30,7 @@ type Postgres struct {
 	Password string `env:"POSTGRES_PASSWORD" envDefault:"password"`
 	Db       string `env:"POSTGRES_DB" envDefault:"postgres"`
 	SslMode  string `env:"POSTGRES_SSL_MODE" envDefault:"disable"`
-	DSN      string `env:"POSTGRES_DSN"`
+	DSN      string
 }
 
 func New() (*Config, error) {
