@@ -94,6 +94,19 @@ definitions:
         minLength: 2
         type: string
     type: object
+  response.Pagination:
+    properties:
+      limit:
+        type: integer
+      next:
+        type: string
+      offset:
+        type: integer
+      previous:
+        type: string
+      total:
+        type: integer
+    type: object
   response.Status:
     enum:
     - ok
@@ -117,9 +130,6 @@ definitions:
       status:
         allOf:
         - $ref: '#/definitions/response.Status'
-        description: |-
-          Value is a fixed constant value.
-          Enum: ["error"]
         enum:
         - error
         example: error
@@ -134,22 +144,24 @@ definitions:
         enum:
         - ok
     type: object
-  swagger.FullPersonsResponse:
+  swagger.IdResponse:
     properties:
       data:
-        items:
-          $ref: '#/definitions/models.FullPerson'
-        type: array
+        $ref: '#/definitions/models.Identifier'
       status:
         allOf:
         - $ref: '#/definitions/response.Status'
         enum:
         - ok
     type: object
-  swagger.IdResponse:
+  swagger.PersonsWithPaginationResponse:
     properties:
       data:
-        $ref: '#/definitions/models.Identifier'
+        items:
+          $ref: '#/definitions/models.FullPerson'
+        type: array
+      pagination:
+        $ref: '#/definitions/response.Pagination'
       status:
         allOf:
         - $ref: '#/definitions/response.Status'
@@ -209,7 +221,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/swagger.FullPersonsResponse'
+            $ref: '#/definitions/swagger.PersonsWithPaginationResponse'
         "400":
           description: Bad Request
           schema:
@@ -337,6 +349,10 @@ paths:
             $ref: '#/definitions/swagger.FullPersonResponse'
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/swagger.ErrorResponse'
+        "404":
+          description: Not Found
           schema:
             $ref: '#/definitions/swagger.ErrorResponse'
         "500":

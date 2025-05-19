@@ -87,7 +87,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/swagger.FullPersonsResponse"
+                            "$ref": "#/definitions/swagger.PersonsWithPaginationResponse"
                         }
                     },
                     "400": {
@@ -283,6 +283,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/swagger.ErrorResponse"
                         }
                     },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/swagger.ErrorResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -426,6 +432,26 @@ const docTemplate = `{
                 }
             }
         },
+        "response.Pagination": {
+            "type": "object",
+            "properties": {
+                "limit": {
+                    "type": "integer"
+                },
+                "next": {
+                    "type": "string"
+                },
+                "offset": {
+                    "type": "integer"
+                },
+                "previous": {
+                    "type": "string"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
         "response.Status": {
             "type": "string",
             "enum": [
@@ -459,7 +485,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "status": {
-                    "description": "Value is a fixed constant value.\nEnum: [\"error\"]",
                     "enum": [
                         "error"
                     ],
@@ -490,14 +515,11 @@ const docTemplate = `{
                 }
             }
         },
-        "swagger.FullPersonsResponse": {
+        "swagger.IdResponse": {
             "type": "object",
             "properties": {
                 "data": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/models.FullPerson"
-                    }
+                    "$ref": "#/definitions/models.Identifier"
                 },
                 "status": {
                     "enum": [
@@ -511,11 +533,17 @@ const docTemplate = `{
                 }
             }
         },
-        "swagger.IdResponse": {
+        "swagger.PersonsWithPaginationResponse": {
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/models.Identifier"
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.FullPerson"
+                    }
+                },
+                "pagination": {
+                    "$ref": "#/definitions/response.Pagination"
                 },
                 "status": {
                     "enum": [

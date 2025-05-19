@@ -5,13 +5,12 @@ import (
 	_ "github.com/Gustcat/people-info-service/docs"
 	"github.com/Gustcat/people-info-service/internal/config"
 	"github.com/Gustcat/people-info-service/internal/http-server/handlers/persons"
+	"github.com/Gustcat/people-info-service/internal/logger"
 	"github.com/Gustcat/people-info-service/internal/repository/postgres"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/joho/godotenv"
 	httpSwagger "github.com/swaggo/http-swagger"
-	"gopkg.in/natefinch/lumberjack.v2"
-	"log"
 	"log/slog"
 	"net/http"
 	"os"
@@ -19,7 +18,6 @@ import (
 
 const (
 	envLocal = "local"
-	envProd  = "prod"
 )
 
 // @title People info service API
@@ -28,19 +26,24 @@ const (
 // @host localhost:8080
 // @BasePath /api/v1
 func main() {
+	log := logger.SetupLogger(slog.LevelInfo)
+
 	ctx := context.Background()
 
 	err := godotenv.Load(".env")
 	if err != nil {
-		log.Fatalf("doesn't load env file: %s", err.Error())
+		log.Warn("doesn't load env file: %s", slog.String("error", err.Error()))
 	}
 
 	conf, err := config.New()
 	if err != nil {
-		log.Fatal(err)
+		log.Error("doesn't set config: %s", slog.String("error", err.Error()))
+		os.Exit(1)
 	}
 
-	log := SetupLogger(conf.Env)
+	if conf.Env == envLocal {
+		log = logger.SetupLogger(slog.LevelDebug)
+	}
 
 	log.Debug("Try to connect to db", slog.String("DSN", conf.Postgres.DSN))
 
@@ -80,33 +83,4 @@ func main() {
 		log.Error("failed to start http server", slog.String("error", err.Error()))
 		os.Exit(1)
 	}
-}
-
-func SetupLogger(env string) *slog.Logger {
-	var log *slog.Logger
-
-	lumberjackLogger := &lumberjack.Logger{
-		Filename:   "app.log",
-		MaxSize:    10, // МБ
-		MaxBackups: 1,  // Кол-во старых файлов
-		MaxAge:     2,  // Дней хранить
-		Compress:   true,
-	}
-
-	switch env {
-	case envLocal:
-		log = slog.New(
-			slog.NewJSONHandler(lumberjackLogger, &slog.HandlerOptions{Level: slog.LevelDebug}),
-		)
-	case envProd:
-		log = slog.New(
-			slog.NewJSONHandler(lumberjackLogger, &slog.HandlerOptions{Level: slog.LevelInfo}),
-		)
-	default:
-		log = slog.New(
-			slog.NewJSONHandler(lumberjackLogger, &slog.HandlerOptions{Level: slog.LevelInfo}),
-		)
-	}
-
-	return log
 }

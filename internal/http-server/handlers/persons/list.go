@@ -2,8 +2,10 @@ package persons
 
 import (
 	"context"
+	"fmt"
 	"github.com/Gustcat/people-info-service/internal/lib/filter"
 	"github.com/Gustcat/people-info-service/internal/lib/response"
+	"github.com/Gustcat/people-info-service/internal/lib/urlbuilder"
 	"github.com/Gustcat/people-info-service/internal/models"
 	"github.com/go-chi/render"
 	"github.com/gorilla/schema"
@@ -12,7 +14,7 @@ import (
 )
 
 type Lister interface {
-	List(ctx context.Context, filter *filter.PersonFilter) ([]*models.FullPerson, error)
+	List(ctx context.Context, filter *filter.PersonFilter) ([]*models.FullPerson, uint64, error)
 }
 
 // List возвращает профили людей
@@ -23,7 +25,7 @@ type Lister interface {
 // @Accept       json
 // @Produce      json
 // @Param        filter query filter.PersonFilter  false "Фильтрация и пагинация"
-// @Success      200  {object}  swagger.FullPersonsResponse
+// @Success      200  {object}  swagger.PersonsWithPaginationResponse
 // @Failure      400  {object}  swagger.ErrorResponse
 // @Failure      500  {object}  swagger.ErrorResponse
 // @Router       /persons/ [get]
@@ -39,12 +41,12 @@ func List(ctx context.Context, log *slog.Logger, lister Lister) http.HandlerFunc
 		if err != nil {
 			log.Error("Bad request", slog.String("error", err.Error()))
 			render.Status(r, http.StatusBadRequest)
-			render.JSON(w, r, response.Error("invalid query-parameter"))
+			render.JSON(w, r, response.Error(fmt.Sprintf("invalid query-parameter: %s", err.Error())))
 			return
 		}
 
 		log.Debug("Get persons from DB by filter", slog.Any("filter", personFilter))
-		persons, err := lister.List(ctx, &personFilter)
+		persons, total, err := lister.List(ctx, &personFilter)
 		if err != nil {
 			log.Error("Failed to list persons", slog.String("error", err.Error()))
 			render.Status(r, http.StatusInternalServerError)
@@ -52,6 +54,22 @@ func List(ctx context.Context, log *slog.Logger, lister Lister) http.HandlerFunc
 			return
 		}
 
-		render.JSON(w, r, response.OK[[]*models.FullPerson](&persons))
+		url := urlbuilder.BaseURL(r)
+		offset := response.DefaultOffset
+		limit := response.DefaultLimit
+		if personFilter.Limit != nil {
+			limit = *personFilter.Limit
+		}
+		if personFilter.Offset != nil {
+			offset = *personFilter.Offset
+		}
+		pagination, err := response.NewPagination(limit, offset, total, url)
+		if err != nil {
+			log.Error("Failed to create pagination", slog.String("error", err.Error()))
+			render.Status(r, http.StatusInternalServerError)
+			render.JSON(w, r, response.Error("failed to create pagination"))
+		}
+
+		render.JSON(w, r, response.OKWithPagination[[]*models.FullPerson](&persons, pagination))
 	}
 }

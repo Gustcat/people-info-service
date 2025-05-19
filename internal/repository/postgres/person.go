@@ -102,11 +102,66 @@ func (r *Repo) GetByID(ctx context.Context, id int64) (*models.FullPerson, error
 	return &person, nil
 }
 
-func (r *Repo) List(ctx context.Context, filter *filter.PersonFilter) ([]*models.FullPerson, error) {
-	builder := sq.Select(idColumn, nameColumn, surnameColumn, patronymicColumn, genderColumn, ageColumn, nationalityColumn).
+func (r *Repo) List(ctx context.Context, filter *filter.PersonFilter) ([]*models.FullPerson, uint64, error) {
+	persons := make([]*models.FullPerson, 0)
+
+	builder := sq.Select("COUNT(*)").
 		From("person").
 		PlaceholderFormat(sq.Dollar)
 
+	builder = applyPersonFilters(builder, filter)
+
+	query, args, err := builder.ToSql()
+	if err != nil {
+		return nil, 0, err
+	}
+
+	var total uint64
+	err = r.db.QueryRow(ctx, query, args...).Scan(&total)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	if filter.Offset != nil && *filter.Offset >= total {
+		return persons, 0, nil
+	}
+
+	builder = sq.Select(
+		idColumn,
+		nameColumn,
+		surnameColumn,
+		patronymicColumn,
+		genderColumn,
+		ageColumn,
+		nationalityColumn).
+		From("person").
+		PlaceholderFormat(sq.Dollar).
+		OrderBy("id")
+
+	builder = applyPersonFilters(builder, filter)
+
+	if filter.Limit != nil {
+		builder = builder.Limit(*filter.Limit)
+	}
+
+	if filter.Offset != nil {
+		builder = builder.Offset(*filter.Offset)
+	}
+
+	query, args, err = builder.ToSql()
+	if err != nil {
+		return nil, 0, err
+	}
+
+	err = pgxscan.Select(ctx, r.db, &persons, query, args...)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return persons, total, nil
+}
+
+func applyPersonFilters(builder sq.SelectBuilder, filter *filter.PersonFilter) sq.SelectBuilder {
 	if filter.Name != nil {
 		builder = builder.Where(sq.Eq{"name": *filter.Name})
 	}
@@ -129,25 +184,7 @@ func (r *Repo) List(ctx context.Context, filter *filter.PersonFilter) ([]*models
 		builder = builder.Where(sq.Eq{"nationality": *filter.Nationality})
 	}
 
-	if filter.Limit != nil {
-		builder = builder.Limit(*filter.Limit)
-	}
-
-	if filter.Offset != nil {
-		builder = builder.Offset(*filter.Offset)
-	}
-
-	query, args, err := builder.ToSql()
-	if err != nil {
-		return nil, err
-	}
-
-	persons := make([]*models.FullPerson, 0)
-	err = pgxscan.Select(ctx, r.db, &persons, query, args...)
-	if err != nil {
-		return nil, err
-	}
-	return persons, nil
+	return builder
 }
 
 func (r *Repo) Update(ctx context.Context, id int64, personUpdate *models.PersonUpdate) (*models.FullPerson, error) {

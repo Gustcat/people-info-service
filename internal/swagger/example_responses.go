@@ -10,9 +10,10 @@ type FullPersonResponse struct {
 	Data   *models.FullPerson `json:"data"`
 }
 
-type FullPersonsResponse struct {
-	Status response.Status      `json:"status"  enums:"ok"`
-	Data   []*models.FullPerson `json:"data"`
+type PersonsWithPaginationResponse struct {
+	Status     response.Status      `json:"status"  enums:"ok"`
+	Data       []*models.FullPerson `json:"data"`
+	Pagination *response.Pagination `json:"pagination"`
 }
 
 type IdResponse struct {
