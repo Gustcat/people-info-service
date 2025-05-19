@@ -2,11 +2,12 @@ package persons
 
 import (
 	"context"
+	"log/slog"
+	"net/http"
+
 	"github.com/Gustcat/people-info-service/internal/lib/params"
 	"github.com/Gustcat/people-info-service/internal/lib/response"
 	"github.com/go-chi/render"
-	"log/slog"
-	"net/http"
 )
 
 type Deleter interface {

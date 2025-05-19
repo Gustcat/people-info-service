@@ -2,6 +2,10 @@ package main
 
 import (
 	"context"
+	"log/slog"
+	"net/http"
+	"os"
+
 	_ "github.com/Gustcat/people-info-service/docs"
 	"github.com/Gustcat/people-info-service/internal/config"
 	"github.com/Gustcat/people-info-service/internal/http-server/handlers/persons"
@@ -11,9 +15,6 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/joho/godotenv"
 	httpSwagger "github.com/swaggo/http-swagger"
-	"log/slog"
-	"net/http"
-	"os"
 )
 
 const (

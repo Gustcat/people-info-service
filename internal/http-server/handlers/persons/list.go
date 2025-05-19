@@ -3,14 +3,15 @@ package persons
 import (
 	"context"
 	"fmt"
+	"log/slog"
+	"net/http"
+
 	"github.com/Gustcat/people-info-service/internal/lib/filter"
 	"github.com/Gustcat/people-info-service/internal/lib/response"
 	"github.com/Gustcat/people-info-service/internal/lib/urlbuilder"
 	"github.com/Gustcat/people-info-service/internal/models"
 	"github.com/go-chi/render"
 	"github.com/gorilla/schema"
-	"log/slog"
-	"net/http"
 )
 
 type Lister interface {
@@ -33,7 +34,7 @@ func List(ctx context.Context, log *slog.Logger, lister Lister) http.HandlerFunc
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.List"
 
-		var decoder = schema.NewDecoder()
+		decoder := schema.NewDecoder()
 
 		log.Debug("Receive list request")
 		var personFilter filter.PersonFilter

@@ -5,6 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"log/slog"
+	"net/http"
+	"sync"
+
 	"github.com/Gustcat/people-info-service/internal/lib/response"
 	"github.com/Gustcat/people-info-service/internal/lib/urlbuilder"
 	"github.com/Gustcat/people-info-service/internal/lib/validation"
@@ -12,10 +17,6 @@ import (
 	"github.com/Gustcat/people-info-service/internal/repository"
 	"github.com/go-chi/render"
 	"github.com/go-playground/validator/v10"
-	"io"
-	"log/slog"
-	"net/http"
-	"sync"
 )
 
 const (

@@ -1,12 +1,13 @@
 package params
 
 import (
-	"github.com/Gustcat/people-info-service/internal/lib/response"
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/render"
 	"log/slog"
 	"net/http"
 	"strconv"
+
+	"github.com/Gustcat/people-info-service/internal/lib/response"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/render"
 )
 
 func ParseIDParam(w http.ResponseWriter, r *http.Request, log *slog.Logger) (int64, bool) {

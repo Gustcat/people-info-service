@@ -4,15 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"log/slog"
+	"net/http"
+
 	"github.com/Gustcat/people-info-service/internal/lib/params"
 	"github.com/Gustcat/people-info-service/internal/lib/response"
 	"github.com/Gustcat/people-info-service/internal/lib/validation"
 	"github.com/Gustcat/people-info-service/internal/models"
 	"github.com/go-chi/render"
 	"github.com/go-playground/validator/v10"
-	"io"
-	"log/slog"
-	"net/http"
 )
 
 type Updater interface {

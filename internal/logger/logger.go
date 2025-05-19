@@ -1,8 +1,9 @@
 package logger
 
 import (
-	"gopkg.in/natefinch/lumberjack.v2"
 	"log/slog"
+
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 func SetupLogger(levelLog slog.Level) *slog.Logger {

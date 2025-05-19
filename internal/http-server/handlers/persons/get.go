@@ -4,13 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
+	"net/http"
+
 	"github.com/Gustcat/people-info-service/internal/lib/params"
 	"github.com/Gustcat/people-info-service/internal/lib/response"
 	"github.com/Gustcat/people-info-service/internal/models"
 	"github.com/Gustcat/people-info-service/internal/repository"
 	"github.com/go-chi/render"
-	"log/slog"
-	"net/http"
 )
 
 type Getter interface {

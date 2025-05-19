@@ -2,8 +2,9 @@ package config
 
 import (
 	"fmt"
-	"github.com/caarlos0/env/v10"
 	"time"
+
+	"github.com/caarlos0/env/v10"
 )
 
 // Config общий конфиг

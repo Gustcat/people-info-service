@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/Gustcat/people-info-service/internal/lib/filter"
 	"github.com/Gustcat/people-info-service/internal/models"
 	"github.com/Gustcat/people-info-service/internal/repository"
@@ -239,7 +240,6 @@ func (r *Repo) Update(ctx context.Context, id int64, personUpdate *models.Person
 	}
 
 	return &person, nil
-
 }
 
 func (r *Repo) Delete(ctx context.Context, id int64) error {

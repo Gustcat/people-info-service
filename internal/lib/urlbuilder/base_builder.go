@@ -9,7 +9,6 @@ import (
 // Build URL with query parameters
 func BuildWithQueryParams(baseUrl string, params map[string]string) (string, error) {
 	u, err := url.Parse(baseUrl)
-
 	if err != nil {
 		return "", err
 	}

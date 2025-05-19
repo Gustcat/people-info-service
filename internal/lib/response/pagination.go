@@ -1,8 +1,9 @@
 package response
 
 import (
-	"github.com/Gustcat/people-info-service/internal/lib/urlbuilder"
 	"strconv"
+
+	"github.com/Gustcat/people-info-service/internal/lib/urlbuilder"
 )
 
 const (
