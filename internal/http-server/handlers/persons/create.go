@@ -45,6 +45,7 @@ type Creator interface {
 func Create(ctx context.Context, log *slog.Logger, creator Creator) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.Create"
+		log := log.With(slog.String("op", op))
 
 		var person models.Person
 

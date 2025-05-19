@@ -37,6 +37,7 @@ type Updater interface {
 func Update(ctx context.Context, log *slog.Logger, updater Updater) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.Update"
+		log := log.With(slog.String("op", op))
 
 		id, isParse := params.ParseIDParam(w, r, log)
 		if !isParse {

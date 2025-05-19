@@ -34,6 +34,7 @@ type Getter interface {
 func GetByID(ctx context.Context, log *slog.Logger, getter Getter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "hadlers.GetByID"
+		log := log.With(slog.String("op", op))
 
 		id, isParse := params.ParseIDParam(w, r, log)
 		if !isParse {

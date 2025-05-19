@@ -29,6 +29,7 @@ type Deleter interface {
 func Delete(ctx context.Context, log *slog.Logger, deleter Deleter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.Delete"
+		log := log.With(slog.String("op", op))
 
 		id, isParse := params.ParseIDParam(w, r, log)
 		if !isParse {

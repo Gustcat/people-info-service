@@ -33,6 +33,7 @@ type Lister interface {
 func List(ctx context.Context, log *slog.Logger, lister Lister) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.List"
+		log := log.With(slog.String("op", op))
 
 		decoder := schema.NewDecoder()
 
