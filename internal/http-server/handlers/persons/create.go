@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"io"
 	"log/slog"
 	"net/http"
 	"sync"
@@ -51,27 +50,18 @@ func Create(log *slog.Logger, creator Creator) gin.HandlerFunc {
 		var person models.Person
 
 		log.Debug("Receive create request")
-		err := validation.DecodeStrictJSON(c.Request, &person)
-		if errors.Is(err, io.EOF) {
-			log.Error("Empty request body")
-			c.AbortWithStatusJSON(http.StatusBadRequest, response.Error("empty request"))
-			return
-		}
-
-		if err != nil {
+		if err := c.ShouldBindJSON(&person); err != nil {
+			if validateErrs, ok := err.(validator.ValidationErrors); ok {
+				errMsg := validation.ErrorMessage(validateErrs)
+				log.Error("Validation failure", slog.String("error", errMsg))
+				c.AbortWithStatusJSON(http.StatusBadRequest, response.Error(errMsg))
+				return
+			}
 			log.Error("Failed to parse request", slog.String("error", err.Error()))
 			c.AbortWithStatusJSON(http.StatusBadRequest, response.Error("failed to parse request"))
 			return
 		}
 		log.Debug("Parsed create successfully", slog.Any("person", person))
-
-		if err := validator.New().Struct(person); err != nil {
-			validateErr := err.(validator.ValidationErrors)
-			errMsg := validation.ErrorMessage(validateErr)
-			log.Error("Validation failure", slog.String("error", errMsg))
-			c.AbortWithStatusJSON(http.StatusBadRequest, response.Error(errMsg))
-			return
-		}
 
 		log.Debug("Try to enrich person information")
 		enrichPerson := enrichPerson(&person, log)

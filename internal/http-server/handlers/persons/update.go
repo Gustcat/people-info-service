@@ -2,10 +2,7 @@ package persons
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"github.com/gin-gonic/gin"
-	"io"
 	"log/slog"
 	"net/http"
 
@@ -45,27 +42,27 @@ func Update(log *slog.Logger, updater Updater) gin.HandlerFunc {
 		}
 
 		var personUpdate *models.PersonUpdate
+
 		log.Debug("Receive update request")
-		err := validation.DecodeStrictJSON(c.Request, &personUpdate)
-		if errors.Is(err, io.EOF) || isEmptyPersonUpdate(personUpdate) {
+		if err := c.ShouldBindJSON(&personUpdate); err != nil {
+			if validateErrs, ok := err.(validator.ValidationErrors); ok {
+				errMsg := validation.ErrorMessage(validateErrs)
+				log.Error("Validation failure", slog.String("error", errMsg))
+				c.AbortWithStatusJSON(http.StatusBadRequest, response.Error(errMsg))
+				return
+			}
+			log.Error("Failed to parse request", slog.String("error", err.Error()))
+			c.AbortWithStatusJSON(http.StatusBadRequest, response.Error("failed to parse request"))
+			return
+		}
+
+		if isEmptyPersonUpdate(personUpdate) {
 			log.Error("Empty request body")
 			c.AbortWithStatusJSON(http.StatusBadRequest, response.Error("empty request"))
 			return
 		}
-		if err != nil {
-			log.Error("Bad request", slog.String("error", err.Error()))
-			c.AbortWithStatusJSON(http.StatusBadRequest, response.Error(fmt.Sprintf("malformed JSON: %s", err)))
-			return
-		}
-		log.Debug("Parsed update successfully", slog.Any("parsed", personUpdate))
 
-		if err := validator.New().Struct(personUpdate); err != nil {
-			validateErr := err.(validator.ValidationErrors)
-			errMsg := validation.ErrorMessage(validateErr)
-			log.Error("Bad request", slog.String("error", errMsg))
-			c.AbortWithStatusJSON(http.StatusBadRequest, response.Error(errMsg))
-			return
-		}
+		log.Debug("Parsed update successfully", slog.Any("person", personUpdate))
 
 		log.Debug("Try to update person in DB")
 		person, err := updater.Update(c.Request.Context(), id, personUpdate)
