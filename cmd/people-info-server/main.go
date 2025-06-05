@@ -2,11 +2,6 @@ package main
 
 import (
 	"context"
-	swaggerFiles "github.com/swaggo/files"
-	"log/slog"
-	"net/http"
-	"os"
-
 	_ "github.com/Gustcat/people-info-service/docs"
 	"github.com/Gustcat/people-info-service/internal/config"
 	"github.com/Gustcat/people-info-service/internal/http-server/handlers/persons"
@@ -14,7 +9,13 @@ import (
 	"github.com/Gustcat/people-info-service/internal/repository/postgres"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	swaggerFiles "github.com/swaggo/files"
 	"github.com/swaggo/gin-swagger"
+	"log/slog"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
 const (
@@ -77,10 +78,23 @@ func main() {
 		IdleTimeout:  conf.HTTPServer.IdleTimeout,
 	}
 
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		if err := srv.ListenAndServe(); err != nil {
+			log.Error("failed to start http server", slog.String("error", err.Error()))
+		}
+	}()
+
 	log.Info("Server started", slog.String("address", conf.HTTPServer.Address))
 
-	if err := srv.ListenAndServe(); err != nil {
-		log.Error("failed to start http server", slog.String("error", err.Error()))
-		os.Exit(1)
+	<-quit
+
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Error("failed to shutdown http server", slog.String("error", err.Error()))
+		return
 	}
+
+	log.Info("Server stopped", slog.String("address", conf.HTTPServer.Address))
 }
