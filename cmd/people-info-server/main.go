@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	swaggerFiles "github.com/swaggo/files"
 	"log/slog"
 	"net/http"
 	"os"
@@ -11,10 +12,9 @@ import (
 	"github.com/Gustcat/people-info-service/internal/http-server/handlers/persons"
 	"github.com/Gustcat/people-info-service/internal/logger"
 	"github.com/Gustcat/people-info-service/internal/repository/postgres"
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
+	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
-	httpSwagger "github.com/swaggo/http-swagger"
+	"github.com/swaggo/gin-swagger"
 )
 
 const (
@@ -56,19 +56,18 @@ func main() {
 	defer repo.Close()
 
 	log.Debug("Try to setup router")
-	router := chi.NewRouter()
+	router := gin.Default()
 
-	router.Use(middleware.Recoverer)
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-	router.Get("/swagger/*", httpSwagger.WrapHandler)
-
-	router.Route("/api/v1/persons", func(r chi.Router) {
-		r.Post("/", persons.Create(ctx, log, repo))
-		r.Get("/", persons.List(ctx, log, repo))
-		r.Get("/{id}", persons.GetByID(ctx, log, repo))
-		r.Patch("/{id}", persons.Update(ctx, log, repo))
-		r.Delete("/{id}", persons.Delete(ctx, log, repo))
-	})
+	r := router.Group("/api/v1/persons")
+	{
+		r.POST("/", persons.Create(log, repo))
+		r.GET("/", persons.List(log, repo))
+		r.GET("/:id", persons.GetByID(log, repo))
+		r.PATCH("/:id", persons.Update(log, repo))
+		r.DELETE("/:id", persons.Delete(log, repo))
+	}
 
 	srv := &http.Server{
 		Addr:         conf.HTTPServer.Address,

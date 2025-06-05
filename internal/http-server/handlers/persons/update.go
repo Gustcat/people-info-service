@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"io"
 	"log/slog"
 	"net/http"
@@ -12,7 +13,6 @@ import (
 	"github.com/Gustcat/people-info-service/internal/lib/response"
 	"github.com/Gustcat/people-info-service/internal/lib/validation"
 	"github.com/Gustcat/people-info-service/internal/models"
-	"github.com/go-chi/render"
 	"github.com/go-playground/validator/v10"
 )
 
@@ -34,29 +34,27 @@ type Updater interface {
 // @Failure      404  {object}  swagger.ErrorResponse
 // @Failure      500  {object}  swagger.ErrorResponse
 // @Router       /persons/{id} [patch]
-func Update(ctx context.Context, log *slog.Logger, updater Updater) http.HandlerFunc {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func Update(log *slog.Logger, updater Updater) gin.HandlerFunc {
+	return func(c *gin.Context) {
 		const op = "handlers.Update"
 		log := log.With(slog.String("op", op))
 
-		id, isParse := params.ParseIDParam(w, r, log)
+		id, isParse := params.ParseIDParam(c, log)
 		if !isParse {
 			return
 		}
 
 		var personUpdate *models.PersonUpdate
 		log.Debug("Receive update request")
-		err := validation.DecodeStrictJSON(r, &personUpdate)
+		err := validation.DecodeStrictJSON(c.Request, &personUpdate)
 		if errors.Is(err, io.EOF) || isEmptyPersonUpdate(personUpdate) {
 			log.Error("Empty request body")
-			render.Status(r, http.StatusBadRequest)
-			render.JSON(w, r, response.Error("empty request"))
+			c.AbortWithStatusJSON(http.StatusBadRequest, response.Error("empty request"))
 			return
 		}
 		if err != nil {
 			log.Error("Bad request", slog.String("error", err.Error()))
-			render.Status(r, http.StatusBadRequest)
-			render.JSON(w, r, response.Error(fmt.Sprintf("malformed JSON: %s", err)))
+			c.AbortWithStatusJSON(http.StatusBadRequest, response.Error(fmt.Sprintf("malformed JSON: %s", err)))
 			return
 		}
 		log.Debug("Parsed update successfully", slog.Any("parsed", personUpdate))
@@ -65,23 +63,21 @@ func Update(ctx context.Context, log *slog.Logger, updater Updater) http.Handler
 			validateErr := err.(validator.ValidationErrors)
 			errMsg := validation.ErrorMessage(validateErr)
 			log.Error("Bad request", slog.String("error", errMsg))
-			render.Status(r, http.StatusBadRequest)
-			render.JSON(w, r, response.Error(errMsg))
+			c.AbortWithStatusJSON(http.StatusBadRequest, response.Error(errMsg))
 			return
 		}
 
 		log.Debug("Try to update person in DB")
-		person, err := updater.Update(ctx, id, personUpdate)
+		person, err := updater.Update(c.Request.Context(), id, personUpdate)
 		if err != nil {
 			log.Error("Failed to update person", slog.String("error", err.Error()))
-			render.Status(r, http.StatusInternalServerError)
-			render.JSON(w, r, response.Error("failed to change person"))
+			c.AbortWithStatusJSON(http.StatusInternalServerError, response.Error("failed to change person"))
 			return
 		}
 
 		log.Info("Person updated", slog.Int64("id", id))
-		render.JSON(w, r, response.OK[models.FullPerson](person))
-	})
+		c.JSON(http.StatusOK, response.OK[models.FullPerson](person))
+	}
 }
 
 func isEmptyPersonUpdate(p *models.PersonUpdate) bool {

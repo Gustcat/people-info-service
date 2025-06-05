@@ -195,7 +195,6 @@ func (r *Repo) Update(ctx context.Context, id int64, personUpdate *models.Person
 		PlaceholderFormat(sq.Dollar).
 		Where(sq.Eq{idColumn: id})
 
-	// TODO: разобраться с отсутствием Set
 	if personUpdate.Name != nil {
 		builder = builder.Set("name", *personUpdate.Name)
 	}

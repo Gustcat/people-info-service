@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"io"
 	"log/slog"
 	"net/http"
@@ -15,7 +16,6 @@ import (
 	"github.com/Gustcat/people-info-service/internal/lib/validation"
 	"github.com/Gustcat/people-info-service/internal/models"
 	"github.com/Gustcat/people-info-service/internal/repository"
-	"github.com/go-chi/render"
 	"github.com/go-playground/validator/v10"
 )
 
@@ -42,26 +42,25 @@ type Creator interface {
 // @Failure      400  {object}  swagger.ErrorResponse
 // @Failure      500  {object}  swagger.ErrorResponse
 // @Router       /persons/ [post]
-func Create(ctx context.Context, log *slog.Logger, creator Creator) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func Create(log *slog.Logger, creator Creator) gin.HandlerFunc {
+	return func(c *gin.Context) {
 		const op = "handlers.Create"
+
 		log := log.With(slog.String("op", op))
 
 		var person models.Person
 
 		log.Debug("Receive create request")
-		err := render.DecodeJSON(r.Body, &person)
+		err := validation.DecodeStrictJSON(c.Request, &person)
 		if errors.Is(err, io.EOF) {
-			log.Error("Bad request: empty request")
-			render.Status(r, http.StatusBadRequest)
-			render.JSON(w, r, response.Error("empty request"))
+			log.Error("Empty request body")
+			c.AbortWithStatusJSON(http.StatusBadRequest, response.Error("empty request"))
 			return
 		}
 
 		if err != nil {
 			log.Error("Failed to parse request", slog.String("error", err.Error()))
-			render.Status(r, http.StatusBadRequest)
-			render.JSON(w, r, response.Error("failed to parse request"))
+			c.AbortWithStatusJSON(http.StatusBadRequest, response.Error("failed to parse request"))
 			return
 		}
 		log.Debug("Parsed create successfully", slog.Any("person", person))
@@ -70,8 +69,7 @@ func Create(ctx context.Context, log *slog.Logger, creator Creator) http.Handler
 			validateErr := err.(validator.ValidationErrors)
 			errMsg := validation.ErrorMessage(validateErr)
 			log.Error("Validation failure", slog.String("error", errMsg))
-			render.Status(r, http.StatusBadRequest)
-			render.JSON(w, r, response.Error(errMsg))
+			c.AbortWithStatusJSON(http.StatusBadRequest, response.Error(errMsg))
 			return
 		}
 
@@ -79,26 +77,23 @@ func Create(ctx context.Context, log *slog.Logger, creator Creator) http.Handler
 		enrichPerson := enrichPerson(&person, log)
 		log.Debug("Enrich person successfully", slog.Any("enrich", enrichPerson))
 
-		id, err := creator.Create(r.Context(), enrichPerson)
+		id, err := creator.Create(c.Request.Context(), enrichPerson)
 		if errors.Is(err, repository.ErrPersonExists) {
 			log.Error("Get error", slog.String("error", err.Error()))
-			render.Status(r, http.StatusBadRequest)
-			render.JSON(w, r, response.Error(fmt.Sprintf(
+			c.AbortWithStatusJSON(http.StatusBadRequest, response.Error(fmt.Sprintf(
 				"Person with name %s %s already exists", person.Name, person.Surname)))
 			return
 		}
 
 		if err != nil {
 			log.Error("Failed to add person", slog.String("error", err.Error()))
-			render.Status(r, http.StatusInternalServerError)
-			render.JSON(w, r, response.Error("failed to add person"))
+			c.AbortWithStatusJSON(http.StatusInternalServerError, response.Error("failed to add person"))
 			return
 		}
 
 		log.Info("Person created", slog.Int64("id", id))
 		createResp := &models.Identifier{ID: id}
-		render.Status(r, http.StatusCreated)
-		render.JSON(w, r, response.OK[models.Identifier](createResp))
+		c.JSON(http.StatusCreated, response.OK[models.Identifier](createResp))
 	}
 }
 

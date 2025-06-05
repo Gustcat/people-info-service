@@ -3,6 +3,7 @@ package persons
 import (
 	"context"
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"log/slog"
 	"net/http"
 
@@ -10,8 +11,6 @@ import (
 	"github.com/Gustcat/people-info-service/internal/lib/response"
 	"github.com/Gustcat/people-info-service/internal/lib/urlbuilder"
 	"github.com/Gustcat/people-info-service/internal/models"
-	"github.com/go-chi/render"
-	"github.com/gorilla/schema"
 )
 
 type Lister interface {
@@ -30,33 +29,29 @@ type Lister interface {
 // @Failure      400  {object}  swagger.ErrorResponse
 // @Failure      500  {object}  swagger.ErrorResponse
 // @Router       /persons/ [get]
-func List(ctx context.Context, log *slog.Logger, lister Lister) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func List(log *slog.Logger, lister Lister) gin.HandlerFunc {
+	return func(c *gin.Context) {
 		const op = "handlers.List"
 		log := log.With(slog.String("op", op))
 
-		decoder := schema.NewDecoder()
-
 		log.Debug("Receive list request")
 		var personFilter filter.PersonFilter
-		err := decoder.Decode(&personFilter, r.URL.Query())
+		err := c.BindQuery(&personFilter)
 		if err != nil {
 			log.Error("Bad request", slog.String("error", err.Error()))
-			render.Status(r, http.StatusBadRequest)
-			render.JSON(w, r, response.Error(fmt.Sprintf("invalid query-parameter: %s", err.Error())))
+			c.AbortWithStatusJSON(http.StatusBadRequest, response.Error(fmt.Sprintf("invalid query-parameter: %s", err.Error())))
 			return
 		}
 
 		log.Debug("Get persons from DB by filter", slog.Any("filter", personFilter))
-		persons, total, err := lister.List(ctx, &personFilter)
+		persons, total, err := lister.List(c.Request.Context(), &personFilter)
 		if err != nil {
 			log.Error("Failed to list persons", slog.String("error", err.Error()))
-			render.Status(r, http.StatusInternalServerError)
-			render.JSON(w, r, response.Error("failed to list persons"))
+			c.AbortWithStatusJSON(http.StatusInternalServerError, response.Error("failed to list persons"))
 			return
 		}
 
-		url := urlbuilder.BaseURL(r)
+		url := urlbuilder.BaseURL(c.Request)
 		offset := response.DefaultOffset
 		limit := response.DefaultLimit
 		if personFilter.Limit != nil {
@@ -68,10 +63,9 @@ func List(ctx context.Context, log *slog.Logger, lister Lister) http.HandlerFunc
 		pagination, err := response.NewPagination(limit, offset, total, url)
 		if err != nil {
 			log.Error("Failed to create pagination", slog.String("error", err.Error()))
-			render.Status(r, http.StatusInternalServerError)
-			render.JSON(w, r, response.Error("failed to create pagination"))
+			c.AbortWithStatusJSON(http.StatusInternalServerError, response.Error("failed to create pagination"))
 		}
 
-		render.JSON(w, r, response.OKWithPagination[[]*models.FullPerson](&persons, pagination))
+		c.JSON(http.StatusOK, response.OKWithPagination[[]*models.FullPerson](&persons, pagination))
 	}
 }

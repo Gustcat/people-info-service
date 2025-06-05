@@ -37,5 +37,3 @@ func Error(msg string) Response[Void] {
 		Error:  msg,
 	}
 }
-
-// TODO: написать валидатор
